@@ -1,0 +1,28 @@
+:root {
+    --green-50: #F3FCF7;
+    --green-100: #C5F1D9;
+    --green-200: #95E6BC;
+    --green-300: #62DB9E;
+    --green-400: #19D082;
+    --green-500: #00C565;
+    --green-600: #00A756;
+    --green-700: #008A47;
+    --green-800: #006C38;
+    --green-900: #004F29;
+
+    --bg-color: var(--green-50);
+    --text-color: #003d2a;
+    --primary-color: var(--green-500);
+    --secondary-color: var(--green-700);
+}
+
+[data-theme='dark'] {
+    --bg-color: var(--green-900);
+    --text-color: #ffffff;
+    --primary-color: var(--green-400);
+    --secondary-color: var(--green-200);
+}
+
+html {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
