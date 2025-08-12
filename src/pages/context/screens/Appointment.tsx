@@ -122,7 +122,7 @@ export default function Appointment() {
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
-    const handleChangePage = (event:any, newPage: number) => {
+    const handleChangePage = (_event, newPage: number) => {
         setPage(newPage);
         fetchMyApp(docId, newPage, rowsPerPage)
     };
