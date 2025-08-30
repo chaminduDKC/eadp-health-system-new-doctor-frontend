@@ -25,8 +25,9 @@ import {styled} from "@mui/material/styles";
 import Dialog from "@mui/material/Dialog";
 import {Alert, Collapse} from "@mui/material";
 import AlertHook from '../../../alert/Alert.ts'
-import axiosInstance from "../../../axios/axiosInstance.ts";
+import axiosInstance, {startTokenRefreshInterval} from "../../../axios/axiosInstance.ts";
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import {useEffect} from "react";
 
 
 
@@ -113,6 +114,9 @@ function ResponsiveAppBar() {
 
     // ----------------
 
+    useEffect(() => {
+        startTokenRefreshInterval()
+    }, []);
     const [openProfileModal,setOpenProfileModal] = React.useState<boolean>(false);
 
     const handleOpenProfileModal = ():void=>{

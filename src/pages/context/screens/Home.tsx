@@ -13,6 +13,7 @@ import {Alert, Collapse} from "@mui/material";
 import AlertHook from '../../../alert/Alert.ts'
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from '@mui/icons-material/Close';
+import * as React from "react";
 
 // Animation
 const itemVariant = {
@@ -24,7 +25,7 @@ type Time = {
     id: number;
     name:string
 }
-const Home = () => {
+const Home:React.FC = () => {
     const {openAlert, alertStatus, showAlert, closeAlert} = AlertHook();
 
     const [date, setDate] = useState<Dayjs | null>(dayjs(new Date()));
@@ -57,10 +58,13 @@ const Home = () => {
     const [timeSlots, setTimeSlots] = useState<Time[]>([])
     const [alreadyBookedTimeSlots, setAlreadyBookedTimeSlots] = useState<[]>([])
 
+    const availabilityUrl = import.meta.env.VITE_AVAILABILITY_API;
+    const bookingUrl = import.meta.env.VITE_BOOKING_API;
+    const doctorUrl = import.meta.env.VITE_DOCTOR_API;
 
     const fetchTimeSlots = async (docId:string, date:string) => {
         try {
-            const response = await axiosInstance.get(`http://localhost:9093/api/availabilities/get-availabilities-by-date-and-doctor/${docId}`, {
+            const response = await axiosInstance.get(`${availabilityUrl}/get-availabilities-by-date-and-doctor/${docId}`, {
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${localStorage.getItem("access_token")}`
@@ -81,7 +85,7 @@ const Home = () => {
     }
     // --------------------------------------
     const fetchAlreadyBookedTimes = async (docId:string, date:string)=>{
-        await axiosInstance.get(`http://localhost:9093/api/availabilities/get-booked-time-slots/${docId}`, {params:{date:date}}).then(res=>{
+        await axiosInstance.get(`${availabilityUrl}/get-booked-time-slots/${docId}`, {params:{date:date}}).then(res=>{
             if(res.data.data.length === 0){
                 showAlert("no-booked-times-for-doctor")
                 setAlreadyBookedTimeSlots([])
@@ -97,7 +101,7 @@ const Home = () => {
 
     const [availableDatesByDoctor, setAvailableDatesByDoctor] = useState<string[]>([])
     const fetchSelectedDates = async (docId:string) =>{
-        await axiosInstance.get(`http://localhost:9093/api/bookings/get-available-dates-by-doctor/${docId}`).then(res=>{
+        await axiosInstance.get(`${bookingUrl}/get-available-dates-by-doctor/${docId}`).then(res=>{
 
             if(res.data.data.length === 0){
                 showAlert("no-available-dates-for-you")
@@ -114,7 +118,7 @@ const Home = () => {
     // --------------------------------------
 
     const fetchMe = async ()=>{
-        await axiosInstance.get("http://localhost:9091/api/doctors/auth-doctor-details", {headers:{Authorization : `Bearer ${localStorage.getItem("access_token")}`}}).then(res=>{
+        await axiosInstance.get(`${doctorUrl}/auth-doctor-details`, {headers:{Authorization : `Bearer ${localStorage.getItem("access_token")}`}}).then(res=>{
             setDocId(res.data.data.doctorId);
             fetchSelectedDates(res.data.data.doctorId)
             fetchTimeSlots(res.data.data.doctorId, date?.format("YYYY-MM-DD")|| "")
@@ -156,7 +160,7 @@ const Home = () => {
                     startTime:formattedStartTime,
                     endTime:formattedEndTime
                 }
-                const response = await axiosInstance.post(`http://localhost:9093/api/availabilities/save-availabilities`, requestBody);
+                const response = await axiosInstance.post(`${availabilityUrl}/save-availabilities`, requestBody);
                 console.log(response)
                 showAlert("success-create-time")
                 fetchTimeSlots(docId, date?.format("YYYY-MM-DD"));

@@ -9,7 +9,6 @@ import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import Box from "@mui/material/Box";
 import axiosInstance from "../../../axios/axiosInstance.ts";
-import {useEffect} from "react";
 import { styled } from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -29,19 +28,20 @@ import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import { motion } from "framer-motion";
 import AlertHook from '../../../alert/Alert.ts'
 import {Alert, Collapse} from "@mui/material";
+import {useEffect} from "react";
 
 
 
 const rowVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 20, transition: "easeOut" },
     visible: (i: number) => ({
         opacity: 1,
         y: 0,
         transition: {
             delay: i * 0.05,
-            duration: 0.4,
-            ease: "easeOut"
-        }
+            type: "spring",
+            stiffness: 100,
+        },
     }),
 };
 
@@ -55,7 +55,7 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 }));
 
 interface Column {
-    id: 'patientName' | 'date' | 'time' | 'reason' | 'status';
+    id: 'patientName' | 'date' | 'time' | 'reason' | 'status' ;
     label: string;
     minWidth?: number;
     align?: 'right' | 'center' | 'left';
@@ -96,25 +96,38 @@ const columns: readonly Column[] = [
 ];
 
 
-
+type Booking = {
+    patientId:string,
+    time:string,
+    date:string,
+    reason:string,
+    status:string,
+    patientName:string,
+    id:string
+}
 
 export default function Appointment() {
 
     const {openAlert, showAlert, closeAlert, alertStatus } = AlertHook();
 
     const [docId, setDocId] = React.useState<string>("");
-    const [bookingList, setBookingList] = React.useState<[]>([]);
+    const [bookingList, setBookingList] = React.useState<Booking[]>([]);
     const [bookingCount, setBookingCount] = React.useState<number>(0);
+
+    const doctorUrl = import.meta.env.VITE_DOCTOR_API;
+    const bookingUrl = import.meta.env.VITE_BOOKING_API;
+    const patientUrl = import.meta.env.VITE_PATIENT_API;
 
     useEffect(() => {
         fetchMe()
     }, []);
 
     const fetchMe = async ()=>{
-        await axiosInstance.get("http://localhost:9091/api/doctors/auth-doctor-details", {headers:{Authorization : `Bearer ${localStorage.getItem("access_token")}`}}).then(res=>{
+        await axiosInstance.get(`${doctorUrl}/auth-doctor-details`, {headers:{Authorization : `Bearer ${localStorage.getItem("access_token")}`}}).then(res=>{
             setDocId(res.data.data.doctorId)
             fetchMyApp(res.data.data.doctorId, page, rowsPerPage)
         }).catch(err=>{
+            showAlert("Something went wrong. Please login again.")
             console.log(err)
         })
     }
@@ -122,7 +135,7 @@ export default function Appointment() {
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
-    const handleChangePage = (_event, newPage: number) => {
+    const handleChangePage = (_event:React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
         setPage(newPage);
         fetchMyApp(docId, newPage, rowsPerPage)
     };
@@ -135,27 +148,25 @@ export default function Appointment() {
     };
 
     const fetchMyApp = async (docId:string, pageNum:number = page, size:number = rowsPerPage)=>{
-        console.log(docId, page, size);
-        await axiosInstance.get(`http://localhost:9093/api/bookings/find-by-doctor/${docId}`, {params:{page:pageNum, size:size}}).then(res=>{
-            console.log(res)
+        await axiosInstance.get(`${bookingUrl}/find-by-doctor/${docId}`, {params:{page:pageNum, size:size}}).then(res=>{
             setBookingList(res.data.data.bookingList)
             setBookingCount(res.data.data.bookingCount)
         }).catch(()=>{
-            showAlert("failed-fetch-apps")
+            showAlert("Failed to fetch appointments")
         })
     }
 
     const [patientDetails, setPatientDetails] = React.useState<Patient | null>(null)
     const fetchPatientDetails = async (patientId:string)=>{
-        await axiosInstance.get(`http://localhost:9092/api/patients/find-patient/${patientId}`).then(res=>{
+        await axiosInstance.get(`${patientUrl}/find-patient/${patientId}`).then(res=>{
             setPatientDetails(res.data.data);
             handleOpenPatientDetails(res.data.data);
 
         }).catch(err=>{
             if(err.response.data.message === "Patient not found"){
-                showAlert("no-pat")
+                showAlert("No patient found")
             } else {
-                showAlert("failed-fetch-pat")
+                showAlert("Failed to load patient details")
             }
             console.log(err.response.data.message);
 
@@ -169,6 +180,7 @@ export default function Appointment() {
 
         if(!data){
             console.error("Patient details are not available.");
+            showAlert("Patient details are not available")
             return;
         }
 
@@ -179,6 +191,7 @@ export default function Appointment() {
         setOpenPatientDetailModal(false);
         setPatientDetails(null);
     };
+
 
     return (
         <Box sx={{width:"100%",mx:"auto", marginTop:"60px", marginBottom:{
@@ -222,9 +235,7 @@ export default function Appointment() {
                                     alignItems: "center"
                                 }}
                             >
-                                {alertStatus === "failed-fetch-pat" && "Failed to load patient details. Please refresh the page and try again."}
-                                {alertStatus === "no-pat" && "Something went wrong. This patient is not available"}
-                                {alertStatus === "failed-fetch-apps" && "Failed to load your booked appointments. Please refresh the page and try again."}
+                                {alertStatus}
                             </Alert>
                         </Collapse>
             {/*alert*/}
@@ -349,6 +360,8 @@ export default function Appointment() {
                                     custom={index}
                                     initial="hidden"
                                     animate="visible"
+                                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                                    // @ts-expect-error
                                     variants={rowVariants}
                                     onClick={() => fetchPatientDetails(row.patientId)}
                                     style={{ cursor: "pointer" }}
